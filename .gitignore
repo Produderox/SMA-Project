@@ -1,0 +1,21 @@
+# --- Python Junk ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- OS Junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE Junk ---
+.vscode/
+.idea/
+*.swp

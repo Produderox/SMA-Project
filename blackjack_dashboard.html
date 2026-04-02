@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackjack Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0b0c0e;
+  --s1:#131417;
+  --s2:#1a1b1f;
+  --s3:#222328;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.11);
+  --text:#eceae4;
+  --muted:#5c5c60;
+  --muted2:#888884;
+  --green:#b8f04a;
+  --green-dim:rgba(184,240,74,0.12);
+  --green-line:rgba(184,240,74,0.55);
+  --cyan:#4ab8f0;
+  --cyan-dim:rgba(74,184,240,0.12);
+  --cyan-line:rgba(74,184,240,0.55);
+  --red:#f04a4a;
+  --red-dim:rgba(240,74,74,0.10);
+  --amber:#f0a84a;
+  --amber-dim:rgba(240,168,74,0.12);
+  --purple:#b06cf0;
+  --purple-dim:rgba(176,108,240,0.12);
+  --fh:'Syne',sans-serif;
+  --fm:'DM Mono',monospace;
+  --r:10px;
+  --r2:14px;
+}
+
+body{background:var(--bg);color:var(--text);font-family:var(--fm);font-size:13px;line-height:1.6;min-height:100vh}
+
+header{padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.floor-link{margin-left:auto;font-size:11px;color:var(--muted2);text-decoration:none;padding:4px 12px;border:1px solid var(--border2);border-radius:20px;transition:all .2s;font-family:var(--fm)}
+.floor-link:hover{color:var(--amber);border-color:rgba(240,168,74,.3);background:rgba(240,168,74,.06)}
+header h1{font-family:var(--fh);font-size:1.45rem;font-weight:800;letter-spacing:-0.03em}
+.chips{display:flex;gap:6px}
+.chip{padding:2px 9px;border-radius:20px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid}
+.chip.g{color:var(--green);border-color:rgba(184,240,74,.3);background:rgba(184,240,74,.07)}
+.chip.c{color:var(--cyan);border-color:rgba(74,184,240,.3);background:rgba(74,184,240,.07)}
+.chip.a{color:var(--amber);border-color:rgba(240,168,74,.3);background:rgba(240,168,74,.07)}
+.server-pill{display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);font-size:11px;color:var(--muted2);margin-left:auto}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.dot.ok{background:var(--green)}.dot.err{background:var(--red)}
+
+.layout{display:grid;grid-template-columns:270px 1fr;min-height:calc(100vh - 65px)}
+.sidebar{border-right:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto}
+.main{padding:1.25rem;display:flex;flex-direction:column;gap:1.1rem;overflow-y:auto}
+
+.sec-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem}
+.ctrl-group{display:flex;flex-direction:column;gap:.9rem}
+.ctrl{display:flex;flex-direction:column;gap:4px}
+.ctrl-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:0}
+.ctrl label{font-size:11px;color:var(--muted2)}
+
+/* span badges (game rules / hi-lo) */
+.vbadge{font-size:11px;font-weight:500;color:var(--green);background:var(--green-dim);padding:2px 8px;border-radius:4px;border:1px solid rgba(184,240,74,.18);font-family:var(--fm)}
+
+/* editable number inputs (simulation section) — your exact styles preserved */
+input.vbadge {
+  background: var(--s3);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--green);
+  font-family: var(--fm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  width: 70px;
+  padding: 2px 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input.vbadge:focus { border-color: var(--green); }
+input.vbadge::-webkit-inner-spin-button,
+input.vbadge::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+
+/* amber variant for gambler inputs */
+input.vbadge.amber { color:var(--amber); background:var(--amber-dim); border-color:rgba(240,168,74,.2); }
+input.vbadge.amber:focus { border-color:var(--amber); }
+
+input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:var(--border2);border-radius:1px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--green);cursor:pointer;transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25)}
+input[type=range].amber-thumb::-webkit-slider-thumb{background:var(--amber)}
+input[type=range].cover-thumb::-webkit-slider-thumb{background:var(--purple)}
+
+.tog{display:flex;background:var(--s2);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.tog button{flex:1;padding:5px 8px;border:none;background:transparent;color:var(--muted2);font-family:var(--fm);font-size:11px;cursor:pointer;transition:all .15s;letter-spacing:.03em}
+.tog button.on{background:var(--green);color:#0b0c0e;font-weight:500}
+
+hr.div{border:none;border-top:1px solid var(--border)}
+
+/* gambler section */
+.gambler-section{background:rgba(240,168,74,.04);border:1px solid rgba(240,168,74,.12);border-radius:var(--r2);padding:.85rem .9rem}
+
+.run-btn{width:100%;padding:.7rem;border:none;border-radius:var(--r);background:var(--green);color:#0b0c0e;font-family:var(--fh);font-size:.9rem;font-weight:800;letter-spacing:.01em;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.run-btn:hover{opacity:.88;transform:translateY(-1px)}
+.run-btn:active{transform:translateY(0)}
+.run-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.pbar{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.18);transition:width .2s;width:0}
+.run-btn span{position:relative;z-index:1}
+
+.note{font-size:11px;color:var(--muted2);line-height:1.5;padding:.65rem .75rem;background:var(--cyan-dim);border:1px solid rgba(74,184,240,.12);border-radius:var(--r)}
+.note strong{color:var(--cyan)}
+.note.amber-note{background:var(--amber-dim);border-color:rgba(240,168,74,.15)}
+.note.amber-note strong{color:var(--amber)}
+
+/* ── stat cards ── */
+.stat-section-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:0 2px;margin-bottom:4px}
+.stat-section-lbl.g{color:var(--green)}
+.stat-section-lbl.c{color:var(--cyan)}
+.stat-section-lbl.a{color:var(--amber)}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:.75rem .9rem;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sc.basic::before{background:var(--green)}
+.sc.hilo::before{background:var(--cyan)}
+.sc.gambler::before{background:var(--amber)}
+.sc .sl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.sc .sv{font-family:var(--fh);font-size:1.2rem;font-weight:700}
+.sc.basic .sv{color:var(--green)}
+.sc.hilo .sv{color:var(--cyan)}
+.sc.gambler .sv{color:var(--amber)}
+.sc.ap_cover::before{background:var(--purple)}
+.sc.ap_cover .sv{color:var(--purple)}
+.sc .sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ── chart cards ── */
+.cc{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:1.1rem 1.2rem}
+.cc h3{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.9rem}
+.cw{position:relative;width:100%}
+
+.chart-grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+.chart-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.1rem}
+
+.idle{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;letter-spacing:.07em;text-transform:uppercase;border:1px dashed var(--border);border-radius:var(--r)}
+
+.legend{display:flex;gap:12px;margin-bottom:.65rem;flex-wrap:wrap}
+.lpill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2)}
+.lsq{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+/* Lines 46 - 51 */
+.floor-link {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted2);
+  text-decoration: none;
+  padding: 4px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  transition: all .2s;
+  font-family: var(--fm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Hover effect for the link */
+.floor-link:hover {
+  color: var(--amber);
+  border-color: rgba(240,168,74,.35);
+  background: rgba(240,168,74,.06);
+}
+
+.cmp-metric{margin-bottom:14px}
+.cmp-metric:last-child{margin-bottom:0}
+.cmp-metric-lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.cmp-row{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+.cmp-row:last-child{margin-bottom:0}
+.cmp-lbl{width:72px;font-size:11px;color:var(--muted2);flex-shrink:0}
+.cmp-track{flex:1;height:10px;background:var(--s3);border-radius:2px;overflow:hidden}
+.cmp-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.cmp-val{width:56px;font-size:11px;text-align:right;flex-shrink:0;font-family:var(--fm)}
+
+.err-banner{display:none;padding:.75rem 1rem;background:var(--red-dim);border:1px solid rgba(240,74,74,.2);border-radius:var(--r);font-size:12px;color:var(--red)}
+
+@media(max-width:960px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{border-right:none;border-bottom:1px solid var(--border)}
+  .stat-row{grid-template-columns:repeat(3,1fr)}
+  .chart-grid2,.chart-grid3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Blackjack Simulator</h1>
+  <div class="chips">
+    <div class="chip g">Basic</div>
+    <div class="chip c">Hi-Lo</div>
+    <div class="chip a">Gambler</div>
+    <div class="chip" style="color:var(--purple);border-color:rgba(176,108,240,.3);background:rgba(176,108,240,.07)">AP+Cover</div>
+  </div>
+  <div class="server-pill">
+    <div class="dot" id="dot"></div>
+    <span id="server-lbl">connecting…</span>
+  </div>
+  <a class="floor-link" href="casino_floor.html">Casino Floor Model →</a>
+</header>
+
+<div class="layout">
+
+  <!-- ══════════════════════════════ SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- game rules -->
+    <div>
+      <div class="sec-lbl">Game Rules</div>
+      <div class="ctrl-group">
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Number of decks</label><span class="vbadge" id="v-decks">6</span></div>
+          <input type="range" id="decks" min="1" max="8" step="1" value="6">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Shoe penetration</label><span class="vbadge" id="v-pen">75%</span></div>
+          <input type="range" id="penetration" min="0.4" max="0.95" step="0.05" value="0.75">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Blackjack payout</label><span class="vbadge" id="v-bj">3:2</span></div>
+          <input type="range" id="bjpayout" min="1" max="1.5" step="0.5" value="1.5">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Dealer on soft 17</label></div>
+          <div class="tog" id="tog-s17">
+            <button class="on" data-val="false">Stands (S17)</button>
+            <button data-val="true">Hits (H17)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- hi-lo -->
+    <div>
+      <div class="sec-lbl">Hi-Lo Bet Spread</div>
+      <div class="ctrl-group">
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Min bet (units)</label><span class="vbadge" id="v-min">1</span></div>
+          <input type="range" id="spread-min" min="1" max="5" step="1" value="1">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row"><label>Max bet (units)</label><span class="vbadge" id="v-max">12</span></div>
+          <input type="range" id="spread-max" min="4" max="20" step="1" value="12">
+        </div>
+        <div class="note">Bet ramp: <strong>min</strong> at TC ≤ 1 → <strong>max</strong> at TC ≥ 5. All three strategies run simultaneously.</div>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- gambler -->
+    <div class="gambler-section">
+      <div class="sec-lbl" style="color:var(--amber)">Gut-Feel Gambler</div>
+      <div class="ctrl-group">
+        <div class="ctrl">
+          <div class="ctrl-row">
+            <label>Deviation rate</label>
+            <input type="number" class="vbadge amber" id="v-deviation" value="25" min="0" max="100" step="5">
+          </div>
+          <input type="range" id="deviation" min="0" max="100" step="5" value="25" class="amber-thumb">
+        </div>
+        <div class="note amber-note">
+          At <strong id="dev-pct">25%</strong>, each decision has a chance of ignoring basic strategy. <strong>Hunch bets</strong> fire random large bets in the AP spread range.
+        </div>
+        <div class="ctrl" style="margin-top:.5rem">
+          <div class="ctrl-row">
+            <label>Hunch bet chance</label>
+            <input type="number" class="vbadge amber" id="v-hunch" value="10" min="0" max="50" step="5">
+          </div>
+          <input type="range" id="hunch" min="0" max="50" step="5" value="10" class="amber-thumb">
+        </div>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- ap cover -->
+    <div style="background:rgba(176,108,240,.04);border:1px solid rgba(176,108,240,.12);border-radius:var(--r2);padding:.85rem .9rem">
+      <div class="sec-lbl" style="color:var(--purple)">AP + Cover Play</div>
+      <div class="ctrl-group">
+        <div class="ctrl">
+          <div class="ctrl-row">
+            <label>Cover deviation %</label>
+            <input type="number" class="vbadge" id="v-cover" value="30" min="0" max="100" step="5" style="color:var(--purple);background:rgba(176,108,240,.12);border-color:rgba(176,108,240,.2)">
+          </div>
+          <input type="range" id="cover" min="0" max="100" step="5" value="30" class="cover-thumb">
+        </div>
+        <div class="note" style="background:rgba(176,108,240,.1);border-color:rgba(176,108,240,.15)">
+          <span style="color:var(--purple)"><strong>Cover play:</strong></span> AP randomly under-bets the true count signal by this %. Lower EV but harder to detect — shows the longevity vs profit tradeoff.
+        </div>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <!-- simulation — your editable inputs preserved exactly -->
+    <div>
+      <div class="sec-lbl">Simulation</div>
+      <div class="ctrl-group">
+        <div class="ctrl">
+          <div class="ctrl-row">
+            <label>Starting bankroll (units)</label>
+            <input type="number" class="vbadge" id="v-bankroll" value="50" step="10">
+          </div>
+          <input type="range" id="bankroll" min="10" max="10000" step="10" value="50">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row">
+            <label>Rounds per path</label>
+            <input type="number" class="vbadge" id="v-rounds" value="10000" step="1000">
+          </div>
+          <input type="range" id="rounds" min="1000" max="100000" step="1000" value="10000">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-row">
+            <label>Number of paths</label>
+            <input type="number" class="vbadge" id="v-paths" value="200" step="5">
+          </div>
+          <input type="range" id="paths" min="5" max="500" step="5" value="200">
+        </div>
+      </div>
+    </div>
+
+    <div class="err-banner" id="err-banner"></div>
+
+    <button class="run-btn" id="run-btn" onclick="runSim()">
+      <div class="pbar" id="pbar"></div>
+      <span id="run-lbl">Run simulation</span>
+    </button>
+
+  </aside>
+
+  <!-- ══════════════════════════════ MAIN -->
+  <main class="main">
+
+    <!-- stat cards: 3 groups of 3 -->
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div class="stat-section-lbl g">Basic Strategy</div>
+      <div class="stat-row">
+        <div class="sc basic"><div class="sl">House edge</div><div class="sv" id="s-be">—</div><div class="sub">flat 1-unit bet</div></div>
+        <div class="sc basic"><div class="sl">EV / round</div><div class="sv" id="s-bev">—</div><div class="sub">units expected</div></div>
+        <div class="sc basic"><div class="sl">Risk of ruin</div><div class="sv" id="s-bror">—</div><div class="sub">% paths → 0</div></div>
+      </div>
+      <div class="stat-section-lbl c" style="margin-top:6px">Hi-Lo Counting</div>
+      <div class="stat-row">
+        <div class="sc hilo"><div class="sl">House edge</div><div class="sv" id="s-he">—</div><div class="sub">with spread</div></div>
+        <div class="sc hilo"><div class="sl">EV / round</div><div class="sv" id="s-hev">—</div><div class="sub">units expected</div></div>
+        <div class="sc hilo"><div class="sl">Risk of ruin</div><div class="sv" id="s-hror">—</div><div class="sub">% paths → 0</div></div>
+      </div>
+      <div class="stat-section-lbl a" style="margin-top:6px">Gut-Feel Gambler</div>
+      <div class="stat-row">
+        <div class="sc gambler"><div class="sl">House edge</div><div class="sv" id="s-ge">—</div><div class="sub">with deviations</div></div>
+        <div class="sc gambler"><div class="sl">EV / round</div><div class="sv" id="s-gev">—</div><div class="sub">units expected</div></div>
+        <div class="sc gambler"><div class="sl">Risk of ruin</div><div class="sv" id="s-gror">—</div><div class="sub">% paths → 0</div></div>
+      </div>
+      <div class="stat-section-lbl" style="margin-top:6px;color:var(--purple)">AP + Cover Play</div>
+      <div class="stat-row">
+        <div class="sc ap_cover"><div class="sl">House edge</div><div class="sv" id="s-ace">—</div><div class="sub">cover applied</div></div>
+        <div class="sc ap_cover"><div class="sl">EV / round</div><div class="sv" id="s-acev">—</div><div class="sub">units expected</div></div>
+        <div class="sc ap_cover"><div class="sl">Risk of ruin</div><div class="sv" id="s-acror">—</div><div class="sub">% paths → 0</div></div>
+      </div>
+    </div>
+
+    <!-- Risk vs Reward panel -->
+    <div id="rvr-panel" style="display:none;background:var(--s1);border:1px solid rgba(176,108,240,.2);border-radius:var(--r2);padding:1rem 1.2rem">
+      <h3 style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--purple);margin-bottom:.75rem">AP Risk vs Reward — Cover Play Analysis</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Profit Sacrifice</div>
+          <div style="font-family:var(--fh);font-size:1.5rem;font-weight:700;color:var(--red)" id="rvr-sacrifice">—</div>
+          <div style="font-size:11px;color:var(--muted2);margin-top:2px" id="rvr-sacrifice-sub">less EV than pure Hi-Lo</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Longevity Gain</div>
+          <div style="font-family:var(--fh);font-size:1.5rem;font-weight:700;color:var(--green)" id="rvr-longevity">—</div>
+          <div style="font-size:11px;color:var(--muted2);margin-top:2px">median BK survival vs pure Hi-Lo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- comparison + median -->
+    <div class="chart-grid2">
+      <div class="cc">
+        <h3>Strategy comparison — house edge · ev · risk of ruin</h3>
+        <div id="edge-idle" class="idle" style="height:210px">Run simulation to compare</div>
+        <div id="edge-cmp" style="display:none"></div>
+      </div>
+      <div class="cc">
+        <h3>Median final bankroll (units)</h3>
+        <div id="medbk-idle" class="idle" style="height:210px">—</div>
+        <div class="cw" style="height:210px;display:none" id="medbk-wrap">
+          <canvas id="medbk-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- paths -->
+    <div class="cc">
+      <h3>Sample bankroll paths — basic · hi-lo · gambler · ap+cover</h3>
+      <div class="legend">
+        <div class="lpill"><div class="lsq" style="background:rgba(184,240,74,0.35)"></div>Basic paths</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(184,240,74,0.95)"></div>Basic median</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(74,184,240,0.35)"></div>Hi-Lo paths</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(74,184,240,0.95)"></div>Hi-Lo median</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(240,168,74,0.35)"></div>Gambler paths</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(240,168,74,0.95)"></div>Gambler median</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(176,108,240,0.35)"></div>AP+Cover paths</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(176,108,240,0.95)"></div>AP+Cover median</div>
+        <div class="lpill"><div class="lsq" style="background:rgba(255,255,255,0.15)"></div>Starting bankroll</div>
+      </div>
+      <div id="paths-idle" class="idle" style="height:300px">Run simulation to see paths</div>
+      <div class="cw" style="height:300px;display:none" id="paths-wrap">
+        <canvas id="paths-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- dist + ror + ramp -->
+    <div class="chart-grid3">
+      <div class="cc">
+        <h3>Final bankroll distribution</h3>
+        <div class="legend">
+          <div class="lpill"><div class="lsq" style="background:rgba(184,240,74,0.7)"></div>Basic</div>
+          <div class="lpill"><div class="lsq" style="background:rgba(74,184,240,0.7)"></div>Hi-Lo</div>
+          <div class="lpill"><div class="lsq" style="background:rgba(240,168,74,0.7)"></div>Gambler</div>
+          <div class="lpill"><div class="lsq" style="background:rgba(176,108,240,0.7)"></div>AP+Cover</div>
+        </div>
+        <div id="dist-idle" class="idle" style="height:190px">—</div>
+        <div class="cw" style="height:190px;display:none" id="dist-wrap">
+          <canvas id="dist-chart"></canvas>
+        </div>
+      </div>
+      <div class="cc">
+        <h3>Risk of ruin curve</h3>
+        <div class="legend">
+          <div class="lpill"><div class="lsq" style="background:rgba(184,240,74,0.85)"></div>Basic</div>
+          <div class="lpill"><div class="lsq" style="background:rgba(74,184,240,0.85)"></div>Hi-Lo</div>
+          <div class="lpill"><div class="lsq" style="background:rgba(240,168,74,0.85)"></div>Gambler</div>
+          <div class="lpill"><div class="lsq" style="background:rgba(176,108,240,0.85)"></div>AP+Cover</div>
+        </div>
+        <div id="ror-idle" class="idle" style="height:190px">—</div>
+        <div class="cw" style="height:190px;display:none" id="ror-wrap">
+          <canvas id="ror-chart"></canvas>
+        </div>
+      </div>
+      <div class="cc">
+        <h3>Betting ramp — hi-lo true count</h3>
+        <div class="cw" style="height:220px">
+          <canvas id="ramp-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:5000';
+let charts = {};
+
+// BroadcastChannel — sends sim data to casino floor page
+const BC = new BroadcastChannel('bj_sim_data');
+
+// ── server health ─────────────────────────────────────────────────────────────
+async function checkServer() {
+  try {
+    const r = await fetch(API + '/health', { signal: AbortSignal.timeout(2500) });
+    setDot(r.ok ? 'ok' : 'err', r.ok ? 'server online' : 'server error');
+  } catch { setDot('err', 'offline — run server.py'); }
+}
+function setDot(state, msg) {
+  document.getElementById('dot').className = 'dot ' + state;
+  document.getElementById('server-lbl').textContent = msg;
+}
+checkServer();
+setInterval(checkServer, 8000);
+
+// ── slider wiring — preserves your two-way number input logic ─────────────────
+function wire(sliderId, outId, fmt) {
+  const slider = document.getElementById(sliderId);
+  const out    = document.getElementById(outId);
+  const upd = () => {
+    const val = fmt ? fmt(+slider.value) : slider.value;
+    if (out.tagName === 'INPUT') out.value = val;
+    else out.textContent = val;
+  };
+  slider.addEventListener('input', () => { upd(); if(sliderId==='spread-min'||sliderId==='spread-max') drawRamp(); });
+  if (out.tagName === 'INPUT') {
+    out.addEventListener('change', () => {
+      let val = parseFloat(out.value);
+      if (isNaN(val)) val = +slider.min;
+      val = Math.min(+slider.max, Math.max(+slider.min, val));
+      slider.value = val; upd();
+    });
+  }
+  upd();
+}
+// Game Rules (span badges)
+wire('decks',       'v-decks',  v => v);
+wire('penetration', 'v-pen',    v => Math.round(v*100)+'%');
+wire('bjpayout',    'v-bj',     v => v==1.5?'3:2':'6:5');
+// Hi-Lo (span badges)
+wire('spread-min',  'v-min',    v => v);
+wire('spread-max',  'v-max',    v => v);
+// Simulation (editable number inputs — your defaults)
+wire('bankroll', 'v-bankroll');
+wire('rounds',   'v-rounds');
+wire('paths',    'v-paths');
+
+// Deviation (gambler) — two-way range ↔ number
+(function() {
+  const sl = document.getElementById('deviation');
+  const ni = document.getElementById('v-deviation');
+  const dp = document.getElementById('dev-pct');
+  const sync = () => { const p=Math.round(+sl.value); ni.value=p; dp.textContent=p+'%'; };
+  sl.addEventListener('input', sync);
+  ni.addEventListener('change', () => {
+    let v=parseInt(ni.value); if(isNaN(v))v=0;
+    v=Math.min(100,Math.max(0,v)); sl.value=v; ni.value=v; dp.textContent=v+'%';
+  });
+  sync();
+})();
+
+// Hunch chance (casual)
+(function() {
+  const sl = document.getElementById('hunch');
+  const ni = document.getElementById('v-hunch');
+  const sync = () => { ni.value = Math.round(+sl.value); };
+  sl.addEventListener('input', sync);
+  ni.addEventListener('change', () => {
+    let v=parseInt(ni.value); if(isNaN(v))v=0;
+    v=Math.min(50,Math.max(0,v)); sl.value=v; ni.value=v;
+  });
+  sync();
+})();
+
+// Cover deviation (AP+Cover)
+(function() {
+  const sl = document.getElementById('cover');
+  const ni = document.getElementById('v-cover');
+  const sync = () => { ni.value = Math.round(+sl.value); };
+  sl.addEventListener('input', sync);
+  ni.addEventListener('change', () => {
+    let v=parseInt(ni.value); if(isNaN(v))v=0;
+    v=Math.min(100,Math.max(0,v)); sl.value=v; ni.value=v;
+  });
+  sync();
+})();
+
+// Toggle buttons
+document.querySelectorAll('.tog').forEach(tog => {
+  tog.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tog.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    });
+  });
+});
+function togVal(id) { return document.querySelector('#'+id+' button.on').dataset.val; }
+
+// ── chart utils ───────────────────────────────────────────────────────────────
+const MONO = "'DM Mono',monospace";
+const axTick   = { color:'#5c5c60', font:{ family:MONO, size:10 } };
+const gridLine = { color:'rgba(255,255,255,0.04)' };
+const baseOpts = {
+  responsive:true, maintainAspectRatio:false, animation:{ duration:500 },
+  plugins:{ legend:{ display:false } },
+  scales:{ x:{ ticks:axTick, grid:gridLine }, y:{ ticks:axTick, grid:gridLine } }
+};
+
+function kill(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+function show(wrapId, idleId) {
+  document.getElementById(idleId).style.display = 'none';
+  document.getElementById(wrapId).style.display = 'block';
+}
+function medianPath(paths, len) {
+  return Array.from({length:len}, (_,i) => {
+    const vals = paths.map(p=>p[Math.min(i,p.length-1)]).filter(v=>v!==undefined).sort((a,b)=>a-b);
+    return vals[Math.floor(vals.length/2)];
+  });
+}
+
+// ── betting ramp (always live) ────────────────────────────────────────────────
+function betFromTC(tc,mn,mx){ if(tc<=1) return mn; return Math.min(mx, mn+(tc-1)*(mx-mn)/4); }
+function drawRamp() {
+  kill('ramp');
+  const mn=+document.getElementById('spread-min').value;
+  const mx=+document.getElementById('spread-max').value;
+  const tcs=[-3,-2,-1,0,1,2,3,4,5,6,7];
+  const bets=tcs.map(tc=>+betFromTC(tc,mn,mx).toFixed(2));
+  charts['ramp'] = new Chart(document.getElementById('ramp-chart'), {
+    type:'bar',
+    data:{ labels:tcs.map(t=>t>=0?'+'+t:String(t)), datasets:[{
+      data:bets,
+      backgroundColor:bets.map(b=>b>mn?'rgba(74,184,240,0.72)':'rgba(255,255,255,0.09)'),
+      borderWidth:0, borderRadius:3
+    }]},
+    options:{ ...baseOpts, scales:{
+      x:{ ...baseOpts.scales.x, title:{ display:true, text:'true count', color:'#5c5c60', font:{size:10,family:MONO} }},
+      y:{ ...baseOpts.scales.y, min:0, title:{ display:true, text:'bet (units)', color:'#5c5c60', font:{size:10,family:MONO} }, ticks:{ ...axTick, stepSize:1 }}
+    }}
+  });
+}
+drawRamp();
+
+// ── render all results ────────────────────────────────────────────────────────
+function renderAll(data) {
+  // Defensive: verify all four strategy keys are present
+  if (!data.basic || !data.hilo || !data.gambler || !data.ap_cover) {
+    const missing = ['basic','hilo','gambler','ap_cover'].filter(k => !data[k]);
+    document.getElementById('err-banner').textContent =
+      '⚠ Server returned incomplete data. Missing: ' + missing.join(', ') +
+      '. Make sure server.py is the latest version.';
+    document.getElementById('err-banner').style.display = 'block';
+    return;
+  }
+
+  const b = data.basic, h = data.hilo, g = data.gambler, ac = data.ap_cover;
+  const coverPct = +document.getElementById('cover').value;
+
+  const ef = v => (v>=0?'+':'')+v.toFixed(3)+'%';
+  const vf = v => (v>=0?'+':'')+v.toFixed(4);
+
+  // ── stat cards ────────────────────────────────────────────────────────────
+  document.getElementById('s-be').textContent    = ef(b.house_edge_pct);
+  document.getElementById('s-bev').textContent   = vf(b.ev_per_round);
+  document.getElementById('s-bror').textContent  = b.ror.toFixed(1)+'%';
+  document.getElementById('s-he').textContent    = ef(h.house_edge_pct);
+  document.getElementById('s-hev').textContent   = vf(h.ev_per_round);
+  document.getElementById('s-hror').textContent  = h.ror.toFixed(1)+'%';
+  document.getElementById('s-ge').textContent    = ef(g.house_edge_pct);
+  document.getElementById('s-gev').textContent   = vf(g.ev_per_round);
+  document.getElementById('s-gror').textContent  = g.ror.toFixed(1)+'%';
+  document.getElementById('s-ace').textContent   = ef(ac.house_edge_pct);
+  document.getElementById('s-acev').textContent  = vf(ac.ev_per_round);
+  document.getElementById('s-acror').textContent = ac.ror.toFixed(1)+'%';
+
+  // ── Risk vs Reward ────────────────────────────────────────────────────────
+  const evSacrifice = h.ev_per_round - ac.ev_per_round;
+  const sacPct = h.ev_per_round !== 0 ? Math.abs(evSacrifice / h.ev_per_round * 100) : 0;
+  const longevityRatio = ac.median_bk > 0 && h.median_bk > 0 ? ac.median_bk / h.median_bk : 1;
+  document.getElementById('rvr-sacrifice').textContent      = sacPct.toFixed(1)+'%';
+  document.getElementById('rvr-sacrifice-sub').textContent  = `less EV than pure Hi-Lo (cover: ${coverPct}%)`;
+  document.getElementById('rvr-longevity').textContent      = longevityRatio.toFixed(2)+'×';
+  document.getElementById('rvr-panel').style.display        = 'block';
+
+  // ── comparison bars ───────────────────────────────────────────────────────
+  const COLORS = ['rgba(184,240,74,1)','rgba(74,184,240,1)','rgba(240,168,74,1)','rgba(176,108,240,1)'];
+  function cmpMetric(label, vals, fmt, lowerIsBetter) {
+    const absMax = Math.max(...vals.map(Math.abs), 0.0001);
+    const best   = lowerIsBetter ? Math.min(...vals) : Math.max(...vals);
+    const names  = ['Basic','Hi-Lo','Gambler','AP+Cover'];
+    const rows   = vals.map((val,i) => {
+      const pct    = (Math.abs(val)/absMax*100).toFixed(1)+'%';
+      const bright = val===best ? '0.78' : '0.28';
+      const fill   = COLORS[i].replace('1)', bright+')');
+      return `<div class="cmp-row">
+        <div class="cmp-lbl">${names[i]}</div>
+        <div class="cmp-track"><div class="cmp-fill" style="width:${pct};background:${fill}"></div></div>
+        <div class="cmp-val" style="color:${COLORS[i]}">${fmt(val)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="cmp-metric"><div class="cmp-metric-lbl">${label}</div>${rows}</div>`;
+  }
+
+  document.getElementById('edge-idle').style.display = 'none';
+  const cmp = document.getElementById('edge-cmp');
+  cmp.style.display = 'block';
+  cmp.innerHTML =
+    cmpMetric('house edge (%)',   [b.house_edge_pct,h.house_edge_pct,g.house_edge_pct,ac.house_edge_pct], v=>v.toFixed(3)+'%', true) +
+    cmpMetric('ev per round',     [b.ev_per_round,h.ev_per_round,g.ev_per_round,ac.ev_per_round], v=>(v>=0?'+':'')+v.toFixed(4), false) +
+    cmpMetric('risk of ruin (%)', [b.ror,h.ror,g.ror,ac.ror], v=>v.toFixed(1)+'%', true);
+
+  // ── median BK bar ─────────────────────────────────────────────────────────
+  kill('medbk'); show('medbk-wrap','medbk-idle');
+  charts['medbk'] = new Chart(document.getElementById('medbk-chart'), {
+    type:'bar',
+    data:{
+      labels:['Basic','Hi-Lo','Gambler','AP+Cover'],
+      datasets:[{ data:[b.median_bk,h.median_bk,g.median_bk,ac.median_bk],
+        backgroundColor:['rgba(184,240,74,0.65)','rgba(74,184,240,0.65)','rgba(240,168,74,0.65)','rgba(176,108,240,0.65)'],
+        borderWidth:0, borderRadius:5 }]
+    },
+    options:{ ...baseOpts, scales:{
+      x:{ ...baseOpts.scales.x },
+      y:{ ...baseOpts.scales.y, title:{ display:true, text:'median final bankroll (units)', color:'#5c5c60', font:{size:10,family:MONO} }}
+    }}
+  });
+
+  // ── bankroll paths ────────────────────────────────────────────────────────
+  kill('paths'); show('paths-wrap','paths-idle');
+  const SHOW = 20;
+  const totalSnaps = Math.max(...[b,h,g,ac].flatMap(s=>s.paths.map(p=>p.length)));
+  const ds = [];
+  const stratDefs = [
+    { paths:b.paths,  faint:'rgba(184,240,74,0.15)', med:'rgba(184,240,74,0.95)' },
+    { paths:h.paths,  faint:'rgba(74,184,240,0.15)',  med:'rgba(74,184,240,0.95)' },
+    { paths:g.paths,  faint:'rgba(240,168,74,0.15)',  med:'rgba(240,168,74,0.95)' },
+    { paths:ac.paths, faint:'rgba(176,108,240,0.15)', med:'rgba(176,108,240,0.95)' },
+  ];
+  for (const {paths,faint,med} of stratDefs) {
+    paths.slice(0,SHOW).forEach(p => ds.push({data:p,borderColor:faint,borderWidth:0.65,pointRadius:0,tension:0.3,fill:false}));
+    ds.push({data:medianPath(paths,totalSnaps),borderColor:med,borderWidth:2.2,borderDash:[6,3],pointRadius:0,tension:0.3,fill:false});
+  }
+  ds.push({data:Array(totalSnaps).fill(b.start_bk),borderColor:'rgba(255,255,255,0.10)',borderWidth:1,borderDash:[2,5],pointRadius:0,fill:false});
+  charts['paths'] = new Chart(document.getElementById('paths-chart'), {
+    type:'line',
+    data:{ labels:Array.from({length:totalSnaps},(_,i)=>String(i)), datasets:ds },
+    options:{ ...baseOpts, animation:{duration:600}, scales:{
+      x:{ ...baseOpts.scales.x, ticks:{...axTick,maxTicksLimit:10}, title:{display:true,text:'snapshot (1% of rounds each)',color:'#5c5c60',font:{size:10,family:MONO}}},
+      y:{ ...baseOpts.scales.y, title:{display:true,text:'bankroll (units)',color:'#5c5c60',font:{size:10,family:MONO}}}
+    }}
+  });
+
+  // ── distribution ──────────────────────────────────────────────────────────
+  kill('dist'); show('dist-wrap','dist-idle');
+  const allF = [...b.final_bks,...h.final_bks,...g.final_bks,...ac.final_bks];
+  const minV=Math.min(...allF), maxV=Math.max(...allF);
+  const BINS=30, bw=(maxV-minV)/BINS||1;
+  const bBins=new Array(BINS).fill(0), hBins=new Array(BINS).fill(0),
+        gBins=new Array(BINS).fill(0), acBins=new Array(BINS).fill(0);
+  b.final_bks.forEach(v=>bBins[Math.min(BINS-1,Math.floor((v-minV)/bw))]++);
+  h.final_bks.forEach(v=>hBins[Math.min(BINS-1,Math.floor((v-minV)/bw))]++);
+  g.final_bks.forEach(v=>gBins[Math.min(BINS-1,Math.floor((v-minV)/bw))]++);
+  ac.final_bks.forEach(v=>acBins[Math.min(BINS-1,Math.floor((v-minV)/bw))]++);
+  charts['dist'] = new Chart(document.getElementById('dist-chart'), {
+    type:'bar',
+    data:{ labels:Array.from({length:BINS},(_,i)=>Math.round(minV+i*bw)), datasets:[
+      {label:'Basic',    data:bBins,  backgroundColor:'rgba(184,240,74,0.52)', borderWidth:0, borderRadius:2},
+      {label:'Hi-Lo',    data:hBins,  backgroundColor:'rgba(74,184,240,0.52)',  borderWidth:0, borderRadius:2},
+      {label:'Gambler',  data:gBins,  backgroundColor:'rgba(240,168,74,0.52)',  borderWidth:0, borderRadius:2},
+      {label:'AP+Cover', data:acBins, backgroundColor:'rgba(176,108,240,0.52)', borderWidth:0, borderRadius:2},
+    ]},
+    options:{ ...baseOpts, scales:{
+      x:{ ...baseOpts.scales.x, ticks:{...axTick,maxTicksLimit:6,autoSkip:true} },
+      y:{ ...baseOpts.scales.y }
+    }}
+  });
+
+  // ── RoR curve ─────────────────────────────────────────────────────────────
+  kill('ror'); show('ror-wrap','ror-idle');
+  charts['ror'] = new Chart(document.getElementById('ror-chart'), {
+    type:'line',
+    data:{ labels:b.ror_curve.map(p=>p.threshold), datasets:[
+      {label:'Basic',    data:b.ror_curve.map(p=>p.pct),  borderColor:'rgba(184,240,74,0.85)', borderWidth:1.8, backgroundColor:'rgba(184,240,74,0.06)', fill:true, pointRadius:0, tension:0.4},
+      {label:'Hi-Lo',    data:h.ror_curve.map(p=>p.pct),  borderColor:'rgba(74,184,240,0.85)',  borderWidth:1.8, backgroundColor:'rgba(74,184,240,0.06)',  fill:true, pointRadius:0, tension:0.4},
+      {label:'Gambler',  data:g.ror_curve.map(p=>p.pct),  borderColor:'rgba(240,168,74,0.85)',  borderWidth:1.8, backgroundColor:'rgba(240,168,74,0.06)',  fill:true, pointRadius:0, tension:0.4},
+      {label:'AP+Cover', data:ac.ror_curve.map(p=>p.pct), borderColor:'rgba(176,108,240,0.85)', borderWidth:1.8, backgroundColor:'rgba(176,108,240,0.06)', fill:true, pointRadius:0, tension:0.4},
+    ]},
+    options:{ ...baseOpts, scales:{
+      x:{ ...baseOpts.scales.x, title:{display:true,text:'ruin threshold (units)',color:'#5c5c60',font:{size:10,family:MONO}}},
+      y:{ ...baseOpts.scales.y, min:0, max:100, title:{display:true,text:'% paths ruined',color:'#5c5c60',font:{size:10,family:MONO}}}
+    }}
+  });
+
+  drawRamp();
+
+  // ── Persist for casino floor ─────────────────────────────────────────────
+  // localStorage survives page navigation so the floor page can load the data
+  // even if it was opened AFTER the simulation finished.
+  try {
+    const slim = {};
+    for (const key of ['basic','hilo','gambler','ap_cover']) {
+      if (!data[key]) continue;
+      const s = data[key];
+      slim[key] = {
+        paths:          s.paths.slice(0, 50),
+        bet_histories:  (s.bet_histories || []).slice(0, 50),
+        tc_histories:   (s.tc_histories  || []).slice(0, 50),
+        final_bks:      s.final_bks,
+        median_bk:      s.median_bk,
+        ev_per_round:   s.ev_per_round,
+        house_edge_pct: s.house_edge_pct,
+        ror:            s.ror,
+        ror_curve:      s.ror_curve,
+        start_bk:       s.start_bk,
+        rounds:         s.rounds,
+        spread_min:     s.spread_min || 1,
+        spread_max:     s.spread_max || 12,
+      };
+    }
+    localStorage.setItem('bj_sim_data', JSON.stringify(slim));
+    localStorage.setItem('bj_sim_ts',   Date.now().toString());
+  } catch(lsErr) {
+    console.warn('localStorage write failed:', lsErr);
+  }
+
+  // Also broadcast live in case the floor page is already open in another tab
+  BC.postMessage({ type:'sim_data', data });
+}
+
+// ── fetch & run ───────────────────────────────────────────────────────────────
+async function runSim() {
+  const btn = document.getElementById('run-btn');
+  const lbl = document.getElementById('run-lbl');
+  const bar = document.getElementById('pbar');
+  const err = document.getElementById('err-banner');
+
+  err.style.display = 'none';
+  btn.disabled = true;
+  lbl.textContent = 'Simulating…';
+  bar.style.width = '15%';
+
+  const payload = {
+    decks:              +document.getElementById('decks').value,
+    penetration:        +document.getElementById('penetration').value,
+    blackjack_payout:   +document.getElementById('bjpayout').value,
+    dealer_hits_soft17: togVal('tog-s17') === 'true',
+    bankroll:           +document.getElementById('bankroll').value,
+    rounds:             +document.getElementById('rounds').value,
+    paths:              +document.getElementById('paths').value,
+    spread_min:         +document.getElementById('spread-min').value,
+    spread_max:         +document.getElementById('spread-max').value,
+    deviation_rate:     +document.getElementById('deviation').value / 100,
+    hunch_chance:       +document.getElementById('hunch').value / 100,
+    cover_pct:          +document.getElementById('cover').value / 100,
+  };
+
+  try {
+    bar.style.width = '35%';
+    const res = await fetch(API + '/simulate', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(payload),
+    });
+    bar.style.width = '80%';
+    if (!res.ok) { const j = await res.json(); throw new Error(j.error || res.statusText); }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    bar.style.width = '95%';
+    renderAll(data);
+  } catch(e) {
+    err.textContent = '⚠ ' + e.message;
+    err.style.display = 'block';
+    setDot('err', 'error — check console');
+  } finally {
+    bar.style.width = '100%';
+    setTimeout(()=>{ bar.style.width='0'; btn.disabled=false; lbl.textContent='Run simulation'; }, 400);
+  }
+}
+</script>
+</body>
+</html>
