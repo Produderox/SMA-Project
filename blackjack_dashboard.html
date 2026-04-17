@@ -321,7 +321,7 @@ hr.div{border:none;border-top:1px solid var(--border)}
             <label>Rounds per path</label>
             <input type="number" class="vbadge" id="v-rounds" value="10000" step="1000">
           </div>
-          <input type="range" id="rounds" min="1000" max="100000" step="1000" value="10000">
+          <input type="range" id="rounds" min="1000" max="10000000" step="1000" value="10000">
         </div>
         <div class="ctrl">
           <div class="ctrl-row">
@@ -370,23 +370,6 @@ hr.div{border:none;border-top:1px solid var(--border)}
         <div class="sc ap_cover"><div class="sl">House edge</div><div class="sv" id="s-ace">—</div><div class="sub">cover applied</div></div>
         <div class="sc ap_cover"><div class="sl">EV / round</div><div class="sv" id="s-acev">—</div><div class="sub">units expected</div></div>
         <div class="sc ap_cover"><div class="sl">Risk of ruin</div><div class="sv" id="s-acror">—</div><div class="sub">% paths → 0</div></div>
-      </div>
-    </div>
-
-    <!-- Risk vs Reward panel -->
-    <div id="rvr-panel" style="display:none;background:var(--s1);border:1px solid rgba(176,108,240,.2);border-radius:var(--r2);padding:1rem 1.2rem">
-      <h3 style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--purple);margin-bottom:.75rem">AP Risk vs Reward — Cover Play Analysis</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Profit Sacrifice</div>
-          <div style="font-family:var(--fh);font-size:1.5rem;font-weight:700;color:var(--red)" id="rvr-sacrifice">—</div>
-          <div style="font-size:11px;color:var(--muted2);margin-top:2px" id="rvr-sacrifice-sub">less EV than pure Hi-Lo</div>
-        </div>
-        <div>
-          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Longevity Gain</div>
-          <div style="font-family:var(--fh);font-size:1.5rem;font-weight:700;color:var(--green)" id="rvr-longevity">—</div>
-          <div style="font-size:11px;color:var(--muted2);margin-top:2px">median BK survival vs pure Hi-Lo</div>
-        </div>
       </div>
     </div>
 
@@ -442,7 +425,7 @@ hr.div{border:none;border-top:1px solid var(--border)}
         </div>
       </div>
       <div class="cc">
-        <h3>Risk of ruin curve</h3>
+        <h3>Percentage of bankroll less than starting bankroll</h3>
         <div class="legend">
           <div class="lpill"><div class="lsq" style="background:rgba(184,240,74,0.85)"></div>Basic</div>
           <div class="lpill"><div class="lsq" style="background:rgba(74,184,240,0.85)"></div>Hi-Lo</div>
@@ -645,15 +628,6 @@ function renderAll(data) {
   document.getElementById('s-ace').textContent   = ef(ac.house_edge_pct);
   document.getElementById('s-acev').textContent  = vf(ac.ev_per_round);
   document.getElementById('s-acror').textContent = ac.ror.toFixed(1)+'%';
-
-  // ── Risk vs Reward ────────────────────────────────────────────────────────
-  const evSacrifice = h.ev_per_round - ac.ev_per_round;
-  const sacPct = h.ev_per_round !== 0 ? Math.abs(evSacrifice / h.ev_per_round * 100) : 0;
-  const longevityRatio = ac.median_bk > 0 && h.median_bk > 0 ? ac.median_bk / h.median_bk : 1;
-  document.getElementById('rvr-sacrifice').textContent      = sacPct.toFixed(1)+'%';
-  document.getElementById('rvr-sacrifice-sub').textContent  = `less EV than pure Hi-Lo (cover: ${coverPct}%)`;
-  document.getElementById('rvr-longevity').textContent      = longevityRatio.toFixed(2)+'×';
-  document.getElementById('rvr-panel').style.display        = 'block';
 
   // ── comparison bars ───────────────────────────────────────────────────────
   const COLORS = ['rgba(184,240,74,1)','rgba(74,184,240,1)','rgba(240,168,74,1)','rgba(176,108,240,1)'];
